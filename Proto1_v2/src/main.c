@@ -29,6 +29,8 @@ SOFTWARE.
 
 /* Includes */
 #include "Horloge.h"
+#include "usart.h"
+
 /* Private macro */
 /* Private variables */
 /* Private function prototypes */
@@ -43,20 +45,29 @@ SOFTWARE.
 */
 int main(void)
 {
+	 uint8_t tp;
 
   //__set_PRIMASK(1);
   init_clock();
+  init_usart();
 
-  RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
-  GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODER4)) | (GPIO_MODER_MODER4_0);
-  GPIOA->OSPEEDR = 0xFFFF;
-
-//  GPIOB->ODR = 0XFF;
+ // RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+ // GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODER4)) | (GPIO_MODER_MODER4_0);
+ // GPIOA->OSPEEDR = 0xFFFF;
 
   /* Infinite loop */
   while (1)
   {
 	  //The looping takes multiple mcu cycles, this why the given signal on PA4 is lower than 48MHz.
-      GPIOA->ODR ^= (uint32_t) 0xFFFF;
+	  GPIOA->ODR = GPIOA->ODR ^ (uint32_t) 0xFFF;
+
+	  if((USART2->ISR & USART_ISR_RXNE) == USART_ISR_RXNE){
+		  tp = (uint8_t)(USART2->RDR);
+		  (USART2->TDR) = (uint8_t) tp;
+	  }
+	  if((USART2->ISR & USART_ISR_ORE) == USART_ISR_ORE){
+		  tp = (uint8_t) (USART2->RDR);
+		  USART2->ICR |= USART_ICR_ORECF;
+	  }
   }
 }
